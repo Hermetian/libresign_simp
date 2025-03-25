@@ -46,15 +46,26 @@ export default function Dashboard() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (!data.session) {
+          // No session found, redirect to login
+          router.push("/login");
+          return;
+        }
+        
+        setUser(data.session.user);
+        fetchDocuments(data.session.user.id);
+      } catch (error) {
+        console.error("Session check error:", error);
+        toast.error("Authentication error. Please try logging in again.");
         router.push("/login");
-        return;
       }
-      
-      setUser(session.user);
-      fetchDocuments(session.user.id);
     };
 
     checkUser();

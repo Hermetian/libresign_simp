@@ -27,7 +27,13 @@ export async function GET(request: Request) {
       }
     );
     
-    await supabase.auth.exchangeCodeForSession(code);
+    // Exchange code for session and ensure it's properly saved in cookies
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (error) {
+      console.error("Error exchanging code for session:", error.message);
+      return NextResponse.redirect(new URL("/login?error=session_error", request.url));
+    }
   }
 
   // URL to redirect to after sign in process completes

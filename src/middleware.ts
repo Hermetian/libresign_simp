@@ -12,7 +12,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/favicon.ico") ||
     pathname === "/" ||
     pathname === "/login" ||
-    pathname === "/signup"
+    pathname === "/signup" ||
+    pathname.startsWith("/auth/")  // Allow auth callback routes
   ) {
     return NextResponse.next();
   }
@@ -60,7 +61,15 @@ export async function middleware(request: NextRequest) {
     }
   );
   
-  const { data: { session } } = await supabase.auth.getSession();
+  // Get session - use try/catch to handle any potential errors
+  let session = null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
+  } catch (error) {
+    console.error("Error getting session:", error);
+    // Continue without session - will redirect to login
+  }
   
   // If user is not authenticated and trying to access protected routes
   if (!session && pathname !== "/login" && pathname !== "/signup" && pathname !== "/") {

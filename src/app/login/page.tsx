@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -15,7 +15,6 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "/dashboard";
 
@@ -30,7 +29,7 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -40,9 +39,14 @@ function LoginForm() {
         return;
       }
 
-      toast.success("Logged in successfully");
-      router.push(from);
-      router.refresh();
+      // Check if we have a session
+      if (data?.session) {
+        toast.success("Logged in successfully");
+        // Force reload to ensure session is properly set in cookies and middleware takes effect
+        window.location.href = from;
+      } else {
+        toast.error("Failed to establish session");
+      }
     } catch (error) {
       toast.error("An error occurred during login");
       console.error("Login error:", error);
