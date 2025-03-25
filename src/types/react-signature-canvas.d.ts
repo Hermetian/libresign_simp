@@ -14,12 +14,17 @@ declare module 'react-signature-canvas' {
     onEnd?: () => void;
   }
 
+  export interface PointGroup {
+    color: string;
+    points: Array<{x: number; y: number; time: number; velocity: number}>;
+  }
+
   export default class SignatureCanvas extends React.Component<SignatureCanvasProps> {
     clear(): void;
     isEmpty(): boolean;
     fromDataURL(dataURL: string, options?: object): void;
     toDataURL(type?: string, encoderOptions?: number): string;
-    fromData(pointGroups: any[]): void;
-    toData(): any[];
+    fromData(pointGroups: PointGroup[]): void;
+    toData(): PointGroup[];
   }
 } 

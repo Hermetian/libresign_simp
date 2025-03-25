@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function LoginPage() {
+// Component to handle redirect parameters
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,48 @@ export default function LoginPage() {
   };
 
   return (
+    <form onSubmit={handleLogin}>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email address</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@example.com"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col">
+        <Button className="w-full mb-4" type="submit" disabled={loading}>
+          {loading ? "Signing in..." : "Sign in"}
+        </Button>
+        <p className="text-center text-sm">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-blue-600 hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </CardFooter>
+    </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
@@ -65,43 +108,9 @@ export default function LoginPage() {
               Enter your email and password to access your documents
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleLogin}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@example.com"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col">
-              <Button className="w-full mb-4" type="submit" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
-              </Button>
-              <p className="text-center text-sm">
-                Don't have an account?{" "}
-                <Link href="/signup" className="text-blue-600 hover:underline">
-                  Sign up
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
+          <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
+            <LoginForm />
+          </Suspense>
         </Card>
       </div>
     </div>

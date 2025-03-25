@@ -101,8 +101,9 @@ export default function NewDocumentPage() {
       
       // Redirect to document edit page to add fields
       router.push(`/documents/${documentData.id}/edit`);
-    } catch (error: any) {
-      toast.error("Error uploading document: " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Error uploading document: " + errorMessage);
     } finally {
       setIsUploading(false);
     }

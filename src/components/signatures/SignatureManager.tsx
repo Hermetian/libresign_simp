@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -22,14 +22,13 @@ export default function SignatureManager({ userId, onSelectSignature, selectedSi
   const [signatures, setSignatures] = useState<Signature[]>([]);
   const [loading, setLoading] = useState(true);
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
-
-  // Initialize Supabase client
+  
   const supabase = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const fetchSignatures = async () => {
+  const fetchSignatures = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("signatures")
@@ -43,18 +42,19 @@ export default function SignatureManager({ userId, onSelectSignature, selectedSi
       }
 
       setSignatures(data || []);
-    } catch (error: any) {
-      toast.error("Error fetching signatures: " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Error fetching signatures: " + errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase, userId]);
 
   useEffect(() => {
     if (userId) {
       fetchSignatures();
     }
-  }, [userId]);
+  }, [userId, fetchSignatures]);
 
   const handleSignatureSaved = (signatureUrl: string, signatureId: string) => {
     setSignatureDialogOpen(false);
@@ -105,8 +105,9 @@ export default function SignatureManager({ userId, onSelectSignature, selectedSi
       
       toast.success("Signature deleted");
       fetchSignatures();
-    } catch (error: any) {
-      toast.error("Error deleting signature: " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Error deleting signature: " + errorMessage);
     }
   };
 
@@ -130,8 +131,9 @@ export default function SignatureManager({ userId, onSelectSignature, selectedSi
       
       toast.success("Default signature updated");
       fetchSignatures();
-    } catch (error: any) {
-      toast.error("Error updating default signature: " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Error updating default signature: " + errorMessage);
     }
   };
 
@@ -158,7 +160,7 @@ export default function SignatureManager({ userId, onSelectSignature, selectedSi
       ) : signatures.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-6">
-            <p className="text-gray-500 mb-4">You don't have any signatures yet</p>
+            <p className="text-gray-500 mb-4">You don&apos;t have any signatures yet</p>
             <Button onClick={() => setSignatureDialogOpen(true)}>
               Create Your First Signature
             </Button>

@@ -49,7 +49,7 @@ export default function SignaturePad({ userId, onSave, onCancel }: SignaturePadP
       
       // Upload to Supabase Storage
       const fileName = `signatures/${userId}/${Date.now()}.png`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("signatures")
         .upload(fileName, signatureBlob, {
           contentType: "image/png",
@@ -88,8 +88,9 @@ export default function SignaturePad({ userId, onSave, onCancel }: SignaturePadP
       if (onSave && signatureData) {
         onSave(signatureUrl, signatureData.id);
       }
-    } catch (error: any) {
-      toast.error("Error saving signature: " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Error saving signature: " + errorMessage);
     } finally {
       setIsSaving(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
@@ -10,11 +10,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Database } from "@/lib/supabase";
 
 type Document = Database["public"]["Tables"]["documents"]["Row"];
+type User = {
+  id: string;
+  email?: string;
+};
 
 export default function Dashboard() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
   // Initialize Supabase client
@@ -22,6 +26,23 @@ export default function Dashboard() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
+  const fetchDocuments = useCallback(async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from("documents")
+        .select("*")
+        .or(`created_by.eq.${userId}`)
+        .order("created_at", { ascending: false });
+
+      setDocuments(data || []);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Error fetching documents: " + errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -37,34 +58,15 @@ export default function Dashboard() {
     };
 
     checkUser();
-  }, [router, supabase]);
-
-  const fetchDocuments = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("documents")
-        .select("*")
-        .or(`created_by.eq.${userId}`)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      setDocuments(data || []);
-    } catch (error: any) {
-      toast.error("Error fetching documents: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [router, supabase, fetchDocuments]);
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
       router.push("/login");
-    } catch (error) {
-      toast.error("Error signing out");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Error signing out: " + errorMessage);
     }
   };
 
@@ -98,7 +100,7 @@ export default function Dashboard() {
           ) : documents.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-gray-500 mb-4">You don't have any documents yet</p>
+                <p className="text-gray-500 mb-4">You don&apos;t have any documents yet</p>
                 <Button asChild>
                   <Link href="/documents/new">Create Your First Document</Link>
                 </Button>
