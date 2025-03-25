@@ -3,11 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database } from "@/lib/supabase";
+import { Database, createSupabaseClient } from "@/lib/supabase";
 
 type Document = Database["public"]["Tables"]["documents"]["Row"];
 type User = {
@@ -22,10 +21,7 @@ export default function Dashboard() {
   const router = useRouter();
 
   // Initialize Supabase client
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createSupabaseClient();
 
   const fetchDocuments = useCallback(async (userId: string) => {
     try {

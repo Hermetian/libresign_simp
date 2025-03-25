@@ -1,6 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 
 export type Database = {
   public: {
@@ -129,34 +127,4 @@ export const createSupabaseClient = () => {
   }
 
   return createClient<Database>(supabaseUrl, supabaseAnonKey);
-};
-
-// Server-side Supabase client
-export const createServerSupabaseClient = async () => {
-  const cookieStore = await cookies();
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Supabase URL and anon key must be defined");
-  }
-
-  return createServerClient<Database>(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: Record<string, unknown>) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: Record<string, unknown>) {
-          cookieStore.set({ name, value: "", ...options });
-        },
-      },
-    }
-  );
 }; 

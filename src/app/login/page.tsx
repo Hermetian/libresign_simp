@@ -1,28 +1,38 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { createSupabaseClient } from "@/lib/supabase";
 
 // Component to handle redirect parameters
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "/dashboard";
-
+  
   // Initialize Supabase client
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createSupabaseClient();
+  
+  // Check if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push("/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [router, supabase]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +49,16 @@ function LoginForm() {
         return;
       }
 
-      // Check if we have a session
       if (data?.session) {
         toast.success("Logged in successfully");
-        // Force reload to ensure session is properly set in cookies and middleware takes effect
-        window.location.href = from;
+        
+        // First set the session explicitly in localStorage to ensure it's available
+        // This is a workaround for potential session sync issues
+        localStorage.setItem('supabase.auth.token', JSON.stringify(data.session));
+        
+        // Use router for client-side navigation after ensuring session is set
+        router.push(from);
+        router.refresh();
       } else {
         toast.error("Failed to establish session");
       }

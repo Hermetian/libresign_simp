@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { createSupabaseClient } from "@/lib/supabase";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -18,10 +18,19 @@ export default function SignupPage() {
   const router = useRouter();
 
   // Initialize Supabase client
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createSupabaseClient();
+  
+  // Check if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push("/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [router, supabase]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,12 +73,12 @@ export default function SignupPage() {
           <h1 className="text-3xl font-bold">LibreSign</h1>
           <p className="text-gray-600">Open-source document signing</p>
         </div>
-
+      
         <Card>
           <CardHeader>
-            <CardTitle>Create your account</CardTitle>
+            <CardTitle>Create an account</CardTitle>
             <CardDescription>
-              Sign up to start creating and signing documents
+              Sign up to start using LibreSign for document signing
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSignup}>
@@ -110,7 +119,7 @@ export default function SignupPage() {
             </CardContent>
             <CardFooter className="flex flex-col">
               <Button className="w-full mb-4" type="submit" disabled={loading}>
-                {loading ? "Creating account..." : "Create account"}
+                {loading ? "Creating account..." : "Sign up"}
               </Button>
               <p className="text-center text-sm">
                 Already have an account?{" "}
