@@ -3,12 +3,13 @@
 import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { createSupabaseClient } from "@/lib/supabase";
+import type { Database } from "@/lib/supabase";
 
 // Component to handle redirect parameters
 function LoginForm() {
@@ -17,17 +18,21 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get("from") || "/dashboard";
+  const from = searchParams?.get("from") || "/dashboard";
   
   // Initialize Supabase client
-  const supabase = createSupabaseClient();
+  const supabase = createClientComponentClient<Database>();
   
   // Check if already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push("/dashboard");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
       }
     };
     
@@ -51,12 +56,6 @@ function LoginForm() {
 
       if (data?.session) {
         toast.success("Logged in successfully");
-        
-        // First set the session explicitly in localStorage to ensure it's available
-        // This is a workaround for potential session sync issues
-        localStorage.setItem('supabase.auth.token', JSON.stringify(data.session));
-        
-        // Use router for client-side navigation after ensuring session is set
         router.push(from);
         router.refresh();
       } else {

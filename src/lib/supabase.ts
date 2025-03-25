@@ -126,5 +126,20 @@ export const createSupabaseClient = () => {
     throw new Error("Supabase URL and anon key must be defined");
   }
 
-  return createClient<Database>(supabaseUrl, supabaseAnonKey);
+  // Log initialization in debug mode
+  if (process.env.DEBUG === 'true') {
+    console.log('Initializing Supabase client with URL:', supabaseUrl);
+  }
+
+  const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    },
+    global: {
+      fetch: fetch.bind(globalThis),
+    },
+  });
+
+  return client;
 }; 

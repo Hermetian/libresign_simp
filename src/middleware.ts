@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import type { Database } from "./lib/supabase";
 
 export async function middleware(request: NextRequest) {
@@ -27,55 +27,16 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Create a response object to modify
-    const requestHeaders = new Headers(request.headers);
-    const response = NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+    // Create a response to modify
+    const response = NextResponse.next();
     
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
-          },
-          set(name: string, value: string, options: Record<string, unknown>) {
-            request.cookies.set({
-              name,
-              value,
-              ...options,
-            });
-            response.cookies.set({
-              name,
-              value,
-              ...options,
-            });
-          },
-          remove(name: string, options: Record<string, unknown>) {
-            request.cookies.set({
-              name,
-              value: "",
-              ...options,
-            });
-            response.cookies.set({
-              name,
-              value: "",
-              ...options,
-            });
-          },
-        },
-      }
-    );
+    // Create a Supabase client for the middleware
+    const supabase = createMiddlewareClient<Database>({ req: request, res: response });
     
-    // Get session - use try/catch to handle any potential errors
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
+    // Refresh session if expired
+    const { data: { session } } = await supabase.auth.getSession();
     
-    // If user is not authenticated and trying to access protected routes
+    // If no session, redirect to login
     if (!session) {
       const redirectUrl = new URL("/login", request.url);
       redirectUrl.searchParams.set("from", request.nextUrl.pathname);

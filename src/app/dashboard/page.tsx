@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, createSupabaseClient } from "@/lib/supabase";
+import { Database } from "@/lib/supabase";
 
 type Document = Database["public"]["Tables"]["documents"]["Row"];
 type User = {
@@ -21,7 +22,7 @@ export default function Dashboard() {
   const router = useRouter();
 
   // Initialize Supabase client
-  const supabase = createSupabaseClient();
+  const supabase = createClientComponentClient<Database>();
 
   const fetchDocuments = useCallback(async (userId: string) => {
     try {
@@ -43,20 +44,15 @@ export default function Dashboard() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (error) {
-          throw error;
-        }
-        
-        if (!data.session) {
-          // No session found, redirect to login
+        if (!session) {
           router.push("/login");
           return;
         }
         
-        setUser(data.session.user);
-        fetchDocuments(data.session.user.id);
+        setUser(session.user);
+        fetchDocuments(session.user.id);
       } catch (error) {
         console.error("Session check error:", error);
         toast.error("Authentication error. Please try logging in again.");

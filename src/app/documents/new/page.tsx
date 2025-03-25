@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Database } from "@/lib/supabase";
+import { ensureStorageBuckets } from "@/lib/utils";
 
 export default function NewDocumentPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -67,9 +68,14 @@ export default function NewDocumentPage() {
       
       const userId = session.user.id;
       
+      // Ensure storage buckets exist
+      await ensureStorageBuckets(supabase);
+      
       // Upload the file to Supabase Storage
       const fileName = `documents/${userId}/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-      const { error: uploadError } = await supabase.storage
+      console.log("Uploading file to path:", fileName);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from("documents")
         .upload(fileName, file, {
           contentType: "application/pdf",
@@ -77,8 +83,11 @@ export default function NewDocumentPage() {
         });
       
       if (uploadError) {
+        console.error("Upload error:", uploadError);
         throw new Error(uploadError.message);
       }
+      
+      console.log("Upload successful:", uploadData);
       
       // Insert document record in the database
       const { data: documentData, error: documentError } = await supabase
